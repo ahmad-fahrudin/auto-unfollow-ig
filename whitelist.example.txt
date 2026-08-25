@@ -1,0 +1,6 @@
+# Masukkan satu username Instagram per baris yang TIDAK INGIN di-unfollow (tanpa tanda @)
+# Baris yang diawali dengan tanda # akan diabaikan sebagai komentar.
+# Contoh:
+# instagram
+# cristiano
+# natgeo
