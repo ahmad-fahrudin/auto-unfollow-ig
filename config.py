@@ -38,13 +38,14 @@ REMOTE_DEBUGGING_PORT = 9222
 INSTAGRAM_USERNAME = ""
 
 # Batas maksimal akun yang di-unfollow dalam satu kali sesi eksekusi.
-# Disarankan: 15 - 30 akun per sesi untuk menjaga akun tetap aman dari action block.
+# PENTING: Instagram membatasi unfollow maksimal 15-25 akun per sesi/jam
+# untuk menghindari Action Block ("Try Again Later").
 MAX_UNFOLLOW_LIMIT = 300
 
 # Waktu tunggu acak (detik) antar tindakan unfollow (Safety Human-like Delay)
-# Mencegah deteksi bot otomatis oleh Instagram
-MIN_DELAY_SECONDS = 6
-MAX_DELAY_SECONDS = 15
+# Mencegah deteksi bot otomatis oleh Instagram (disarankan minimal 8-18 detik)
+MIN_DELAY_SECONDS = 1
+MAX_DELAY_SECONDS = 2
 
 # Delay waktu scroll modal daftar follower/following (detik)
 SCROLL_DELAY_SECONDS = 1.8
