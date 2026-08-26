@@ -171,6 +171,11 @@ def run_process(mode: str):
             else:
                 failed_count += 1
                 print(f"  {YELLOW}[!] {msg}{RESET}")
+                if "[PERINGATAN]" in msg or "Action Block" in msg or "dibatasi oleh Instagram" in msg:
+                    print(f"\n{RED}{BOLD}[!] PERINGATAN KEAMANAN AKUN:{RESET}")
+                    print(f"{RED}Instagram membatasi tindakan unfollow sementara.{RESET}")
+                    print(f"{YELLOW}Otomatisasi dihentikan untuk melindungi akun Anda dari penangguhan.{RESET}\n")
+                    break
 
         print("\n" + "="*50)
         print(f"{BOLD}RINGKASAN EKSEKUSI:{RESET}")

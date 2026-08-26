@@ -39,7 +39,7 @@ INSTAGRAM_USERNAME = ""
 
 # Batas maksimal akun yang di-unfollow dalam satu kali sesi eksekusi.
 # Disarankan: 15 - 30 akun per sesi untuk menjaga akun tetap aman dari action block.
-MAX_UNFOLLOW_LIMIT = 25
+MAX_UNFOLLOW_LIMIT = 300
 
 # Waktu tunggu acak (detik) antar tindakan unfollow (Safety Human-like Delay)
 # Mencegah deteksi bot otomatis oleh Instagram
