@@ -43,16 +43,21 @@ auto-unfollow-ig/
 
 ---
 
-## 📦 Cara Menjalankan
+## 📦 Instalasi & Cara Menjalankan
 
 1. **Buka Terminal di Folder Proyek**:
    ```bash
    cd /home/fahrudin/Projects/auto-unfollow-ig
    ```
 
-2. **Jalankan Program Utama**:
+2. **Install Dependensi**:
    ```bash
-   ./venv/bin/python3 main.py
+   pip install -r requirements.txt
+   ```
+
+3. **Jalankan Program Utama**:
+   ```bash
+   python3 main.py
    ```
 
 ---
