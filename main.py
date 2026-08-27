@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import re
 from datetime import datetime
 
 try:
@@ -61,20 +62,19 @@ def view_whitelist():
 
 def check_config_info():
     print(f"\n{MAGENTA}{BOLD}=== INFORMASI KONFIGURASI SISTEM ==={RESET}")
-    print(f"• Edge User Data Asli  : {config.EDGE_USER_DATA_DIR}")
-    print(f"• Edge Profile Asli    : {config.EDGE_PROFILE_DIR}")
     print(f"• Profil Otomasi       : {config.AUTOMATION_PROFILE_DIR}")
-    print(f"• Auto-Sync Sesi Login : {'Aktif' if config.AUTO_SYNC_SESSION else 'Nonaktif'}")
+    print(f"• Profil Browser       : {config.EDGE_PROFILE_DIR}")
     print(f"• Binary Edge (ELF)    : {config.EDGE_BINARY_PATH}")
     print(f"• Mode Tampilan        : {'Headless' if config.HEADLESS_MODE else 'GUI (Jendela Terbuka)'}")
-    print(f"• Max Unfollow / Sesi  : {config.MAX_UNFOLLOW_LIMIT} akun")
+    print(f"• Max Unfollow / Batch : {config.MAX_UNFOLLOW_LIMIT} akun")
     print(f"• Random Safety Delay  : {config.MIN_DELAY_SECONDS}s - {config.MAX_DELAY_SECONDS}s")
     print(f"• File Whitelist       : {config.WHITELIST_FILE}")
     print()
-    print(f"{BOLD}Keunggulan Fitur Auto-Sync:{RESET}")
-    print(f"1. Script otomatis membaca & menyalin sesi login Instagram dari profil Microsoft Edge Anda.")
-    print(f"2. Anda {GREEN}TIDAK PERLU MENUTUP BROWSER EDGE{RESET} saat script ini dijalankan!")
-    print(f"3. Profil utama tetap aman dan tidak akan terjadi konflik database (SingletonLock).")
+    print(f"{BOLD}Fitur Batch & Keamanan Akun:{RESET}")
+    print(f"1. Setiap batch memproses maksimal {config.MAX_UNFOLLOW_LIMIT} akun.")
+    print(f"2. Setelah satu batch selesai, Anda dapat langsung melanjutkan ke batch berikutnya")
+    print(f"   {GREEN}tanpa perlu menutup browser dan tanpa memindai ulang dari awal{RESET}.")
+    print(f"3. Anda juga dapat memberikan jeda waktu istirahat antar-batch untuk keamanan akun.")
     print()
 
 
@@ -133,55 +133,115 @@ def run_process(mode: str):
         save_results_to_file(non_followers, my_user)
 
         # Tampilkan daftar non-follback
-        print(f"\n{YELLOW}{BOLD}Daftar Akun yang Tidak Follback:{RESET}")
+        print(f"\n{YELLOW}{BOLD}Daftar Akun yang Tidak Follback ({len(non_followers)} akun):{RESET}")
         for i, u in enumerate(non_followers[:50], 1):
             print(f"  {i}. @{u}")
         if len(non_followers) > 50:
-            print(f"  ... dan {len(non_followers) - 50} akun lainnya (lihat file txt tersimpan).")
+            print(f"  ... dan {len(non_followers) - 50} akun lainnya (tersimpan di file txt).")
 
         if mode == "scan":
             print(f"\n{GREEN}[✓] Pemindaian selesai! Gunakan Menu 2 atau 3 untuk melakukan unfollow.{RESET}\n")
             return
 
-        # Batasi jumlah unfollow per sesi
-        limit = config.MAX_UNFOLLOW_LIMIT
-        targets = non_followers[:limit]
-
-        print(f"\n{BOLD}Target Unfollow Sesi Ini:{RESET} {CYAN}{len(targets)} akun{RESET} (Maksimal: {limit})")
-
+        # Konfirmasi awal untuk Real Mode sebelum memulai eksekusi
         if mode == "real":
             print(f"\n{RED}{BOLD}[PERINGATAN REAL MODE]{RESET}")
-            print(f"Anda akan melakukan {RED}UNFOLLOW NYATA{RESET} pada {len(targets)} akun di atas.")
-            confirm = input(f"Ketik '{BOLD}YA{RESET}' untuk melanjutkan atau tekan Enter untuk batal: ").strip()
+            print(f"Anda akan memulai proses {RED}UNFOLLOW NYATA{RESET} secara bertahap (batch).")
+            print(f"Setiap batch akan memproses maksimal {config.MAX_UNFOLLOW_LIMIT} akun.")
+            confirm = input(f"Ketik '{BOLD}YA{RESET}' untuk mulai atau tekan Enter untuk batal: ").strip()
             if confirm.upper() != "YA":
                 print(f"{YELLOW}[!] Dibatalkan oleh pengguna.{RESET}\n")
                 return
 
-        print(f"\n{CYAN}[*] Memulai proses {'Simulasi ' if is_dry_run else ''}Unfollow...{RESET}")
-        
-        success_count = 0
-        failed_count = 0
+        remaining_targets = list(non_followers)
+        total_success = 0
+        total_failed = 0
+        batch_number = 1
+        action_blocked = False
 
-        for idx, target in enumerate(targets, 1):
-            print(f"\n[{idx}/{len(targets)}] Memproses @{target}...")
-            success, msg = unfollower.unfollow_user(target)
-            if success:
-                success_count += 1
-                print(f"  {GREEN}[✓] {msg}{RESET}")
+        while remaining_targets and not action_blocked:
+            batch_limit = config.MAX_UNFOLLOW_LIMIT
+            current_batch = remaining_targets[:batch_limit]
+            
+            print("\n" + "="*55)
+            print(f"{CYAN}{BOLD}BATCH #{batch_number}: Memproses {len(current_batch)} akun (Sisa antrean: {len(remaining_targets)} akun){RESET}")
+            print("="*55)
+
+            for idx, target in enumerate(current_batch, 1):
+                global_idx = total_success + total_failed + 1
+                print(f"\n[{idx}/{len(current_batch)}] (Total Akun #{global_idx}) Memproses @{target}...")
+                success, msg = unfollower.unfollow_user(target)
+                if success:
+                    total_success += 1
+                    print(f"  {GREEN}[✓] {msg}{RESET}")
+                else:
+                    total_failed += 1
+                    print(f"  {YELLOW}[!] {msg}{RESET}")
+                    if "[PERINGATAN]" in msg or "Action Block" in msg or "dibatasi oleh Instagram" in msg:
+                        action_blocked = True
+                        print(f"\n{RED}{BOLD}[!] PERINGATAN KEAMANAN AKUN:{RESET}")
+                        print(f"{RED}Instagram membatasi tindakan unfollow sementara (Action Block).{RESET}")
+                        print(f"{YELLOW}Otomatisasi dihentikan untuk melindungi akun Anda.{RESET}\n")
+                        break
+
+            # Hapus akun yang sudah diproses dari daftar antrean
+            remaining_targets = remaining_targets[len(current_batch):]
+
+            if action_blocked:
+                break
+
+            # Jika semua akun telah selesai diproses
+            if not remaining_targets:
+                print(f"\n{GREEN}{BOLD}[✓] Semua akun non-follback ({len(non_followers)} akun) telah selesai diproses!{RESET}")
+                break
+
+            # Tampilkan ringkasan batch yang baru selesai
+            print("\n" + "-"*50)
+            print(f"{BOLD}Batch #{batch_number} Selesai!{RESET}")
+            print(f"• Total berhasil di-unfollow sejauh ini: {GREEN}{total_success}{RESET}")
+            print(f"• Sisa akun belum di-unfollow         : {CYAN}{len(remaining_targets)}{RESET} akun")
+            print("-" * 50)
+
+            # Tanya user untuk melanjutkan ke batch berikutnya tanpa keluar browser & tanpa scan ulang
+            next_count = min(config.MAX_UNFOLLOW_LIMIT, len(remaining_targets))
+            print(f"\n{BOLD}[?] Lanjut ke Batch #{batch_number + 1} ({next_count} akun berikutnya)?{RESET}")
+            print(f" {GREEN}[Y / Enter]{RESET} Lanjutkan langsung sekarang (tanpa tutup browser & tanpa scan ulang)")
+            print(f" {YELLOW}[J <detik>]{RESET} Beri jeda istirahat dulu (contoh: 'J 30' untuk jeda 30 detik) lalu lanjut")
+            print(f" {RED}[N]{RESET}        Cukup / Selesai (kembali ke menu utama)")
+
+            choice = input(f"\n{BOLD}Pilihan Anda [Y/n/jeda]: {RESET}").strip().lower()
+
+            if choice in ["", "y", "ya", "yes", "1", "lanjut"]:
+                batch_number += 1
+                continue
+            elif choice.startswith("j"):
+                # Parsing waktu jeda (misal: "j 30", "jeda 60", "j30")
+                match = re.search(r"\d+", choice)
+                delay_sec = int(match.group()) if match else 30
+                print(f"\n{YELLOW}[*] Mengambil jeda istirahat selama {delay_sec} detik...{RESET}")
+                try:
+                    for s in range(delay_sec, 0, -1):
+                        print(f"    Melanjutkan dalam {s} detik...", end="\r")
+                        time.sleep(1)
+                    print(f"    Melanjutkan ke Batch #{batch_number + 1} sekarang!             ")
+                except KeyboardInterrupt:
+                    print(f"\n{YELLOW}[!] Jeda dilewati, langsung melanjutkan ke batch berikutnya.{RESET}")
+                batch_number += 1
+                continue
+            elif choice in ["n", "no", "tidak", "batal", "0", "exit", "keluar"]:
+                print(f"\n{YELLOW}[*] Proses dihentikan oleh pengguna. Sisa {len(remaining_targets)} akun tersimpan di daftar.{RESET}")
+                break
             else:
-                failed_count += 1
-                print(f"  {YELLOW}[!] {msg}{RESET}")
-                if "[PERINGATAN]" in msg or "Action Block" in msg or "dibatasi oleh Instagram" in msg:
-                    print(f"\n{RED}{BOLD}[!] PERINGATAN KEAMANAN AKUN:{RESET}")
-                    print(f"{RED}Instagram membatasi tindakan unfollow sementara.{RESET}")
-                    print(f"{YELLOW}Otomatisasi dihentikan untuk melindungi akun Anda dari penangguhan.{RESET}\n")
-                    break
+                print(f"\n{YELLOW}[*] Sesi diakhiri. Kembali ke menu utama.{RESET}")
+                break
 
         print("\n" + "="*50)
-        print(f"{BOLD}RINGKASAN EKSEKUSI:{RESET}")
-        print(f"• Berhasil di-unfollow : {GREEN}{success_count}{RESET}")
-        print(f"• Gagal / Dilewati     : {YELLOW}{failed_count}{RESET}")
-        print(f"• Mode                 : {YELLOW if is_dry_run else RED}{'DRY RUN (Simulasi)' if is_dry_run else 'REAL MODE'}{RESET}")
+        print(f"{BOLD}RINGKASAN TOTAL EKSEKUSI:{RESET}")
+        print(f"• Total Batch Dijalankan : {BOLD}{batch_number}{RESET}")
+        print(f"• Berhasil di-unfollow   : {GREEN}{total_success}{RESET}")
+        print(f"• Gagal / Dilewati       : {YELLOW}{total_failed}{RESET}")
+        print(f"• Sisa Akun Belum Selesai: {CYAN}{len(remaining_targets)}{RESET}")
+        print(f"• Mode                   : {YELLOW if is_dry_run else RED}{'DRY RUN (Simulasi)' if is_dry_run else 'REAL MODE'}{RESET}")
         print("="*50 + "\n")
 
     except KeyboardInterrupt:

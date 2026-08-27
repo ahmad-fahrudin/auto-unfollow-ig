@@ -6,16 +6,16 @@ Script otomatisasi Python cerdas untuk mendeteksi dan meng-unfollow akun Instagr
 
 ## 🌟 Keunggulan & Fitur Utama
 
-- **Smart Profile Sync (Tanpa Perlu Tutup Browser)**:
-  Script secara otomatis menyalin dan menyinkronkan data sesi login (`Cookies`, `Local Storage`, `Tokens`) dari direktori Microsoft Edge Fedora (`~/.config/microsoft-edge`) ke profil otomasi yang terisolasi (`~/.config/auto-unfollow-ig-edge`). Browser Edge utama Anda **bisa tetap terbuka** tanpa memicu error `SingletonLock` atau kebijakan keamanan DevTools!
-- **Langsung Pakai Tanpa Login Ulang**: Tidak perlu memasukkan password, email, atau kode OTP / 2FA.
-- **Deteksi Otomatis Username**: Otomatis mendeteksi akun Instagram yang sedang login di Edge.
-- **Deteksi Non-Follback Akurat**: Memindai seluruh *Followers* & *Following*, lalu membandingkan `Non-Followers = Following - Followers`.
+- **Batch Unfollow Berkelanjutan (Tanpa Scan Ulang & Tanpa Tutup Browser)**:
+  Setelah 1 batch (misal 25 akun) selesai di-unfollow, Anda dapat langsung melanjutkan ke batch berikutnya atau menambahkan jeda waktu istirahat secara instan tanpa perlu keluar dari program, membuka ulang browser, ataupun memindai ulang followers/following dari awal.
+- **Sesi Profil Otomasi Permanen**: Sesi login tersimpan permanen di direktori otomasi terisolasi sehingga browser Edge utama Anda bebas dipakai kapan saja.
+- **Deteksi Otomatis Username**: Otomatis mendeteksi akun Instagram yang sedang login.
+- **Deteksi Non-Follback Akurat & Cepat**: Memindai seluruh *Followers* & *Following* via GraphQL/Web API internal secara instan.
 - **Dukungan Whitelist**: Akun penting (teman, keluarga, idola, brand) yang Anda daftarkan di `whitelist.txt` tidak akan pernah di-unfollow.
-- **Mode Simulasi (Dry-Run)**: Anda dapat menguji proses pemindaian dan melihat daftar target tanpa melakukan unfollow sungguhan.
+- **Mode Simulasi (Dry-Run)**: Anda dapat menguji proses pemindaian dan melihat simulasi unfollow tanpa klik nyata.
 - **Fitur Keamanan (Anti-Ban & Anti Action-Block)**:
-  - Random human-like delay (6 - 15 detik) antar aksi unfollow.
-  - Batas maksimal per sesi (default: 25 akun) agar reputasi akun Instagram Anda tetap aman.
+  - Random safety delay antar aksi unfollow.
+  - Pembagian per batch (default: 25 akun) dan deteksi otomatis Action Block (*Try Again Later*).
 - **Multi-bahasa UI**: Mendukung antarmuka Instagram Bahasa Indonesia dan Bahasa Inggris.
 - **Export Hasil**: Otomatis menyimpan daftar akun yang tidak follback ke file `.txt` lengkap dengan waktu pemindaian.
 
@@ -75,9 +75,10 @@ PILIH MENU:
 ```
 
 - **Menu 1**: Memindai followers & following Anda, mencocokkan non-follback, menampilkan hasilnya di layar dan mengekspornya ke file `.txt`.
-- **Menu 2**: Mensimulasikan proses unfollow langkah-demi-langkah (aman untuk uji coba).
-- **Menu 3**: Melakukan aksi unfollow sesungguhnya (akan meminta konfirmasi `YA` terlebih dahulu).
+- **Menu 2**: Mensimulasikan proses unfollow secara bertahap (batch) tanpa klik nyata.
+- **Menu 3**: Melakukan aksi unfollow sesungguhnya per batch dengan opsi lanjut langsung ke batch berikutnya atau jeda waktu istirahat.
 - **Menu 4**: Melihat daftar akun yang terlindungi oleh `whitelist.txt`.
+- **Menu 5**: Melihat informasi konfigurasi dan direktori profil otomasi.
 
 ---
 
@@ -85,20 +86,18 @@ PILIH MENU:
 
 | Parameter | Deskripsi | Default |
 | :--- | :--- | :--- |
-| `EDGE_USER_DATA_DIR` | Path direktori Edge utama di Fedora | `~/.config/microsoft-edge` |
-| `EDGE_PROFILE_DIR` | Nama profil yang digunakan | `"Default"` |
 | `AUTOMATION_PROFILE_DIR` | Direktori profil khusus otomasi | `~/.config/auto-unfollow-ig-edge` |
-| `AUTO_SYNC_SESSION` | Otomatis sinkronkan sesi login Edge | `True` |
+| `EDGE_PROFILE_DIR` | Nama profil yang digunakan | `"Default"` |
 | `HEADLESS_MODE` | Sembunyikan jendela browser | `False` |
-| `MAX_UNFOLLOW_LIMIT` | Maksimal akun unfollow per sesi | `25` |
-| `MIN_DELAY_SECONDS` | Jeda minimum antar unfollow | `6` detik |
-| `MAX_DELAY_SECONDS` | Jeda maksimum antar unfollow | `15` detik |
+| `MAX_UNFOLLOW_LIMIT` | Maksimal akun unfollow per batch | `25` |
+| `MIN_DELAY_SECONDS` | Jeda minimum antar unfollow | `1` detik |
+| `MAX_DELAY_SECONDS` | Jeda maksimum antar unfollow | `2` detik |
+| `WHITELIST_FILE` | File daftar akun yang dilindungi | `"whitelist.txt"` |
 
 ---
 
 ## 🛡️ Tips Keamanan Menghindari Pemblokiran Instagram
 
-1. **Batasi Jumlah Unfollow**: Disarankan maksimal **25 - 50 akun per hari**.
-2. **Beri Jeda Antar Sesi**: Setelah 1 sesi unfollow (misal 25 akun), istirahatkan akun selama 2 - 4 jam sebelum sesi berikutnya.
-3. **Pertahankan Delay Bawaan**: Jeda 6 - 15 detik meniru perilaku manusia dan sangat efektif menghindari deteksi bot.
-4. **Isi Whitelist**: Tambahkan akun teman akrab, figur publik, atau akun berita favorit ke file `whitelist.txt`.
+1. **Gunakan Sistem Batch**: Lakukan unfollow bertahap per batch (misal 25 akun per batch).
+2. **Beri Jeda Antar Batch**: Manfaatkan opsi jeda waktu (misal `J 30` untuk istirahat 30-60 detik) sebelum melanjutkan ke batch berikutnya.
+3. **Isi Whitelist**: Tambahkan akun teman akrab, figur publik, atau akun bisnis ke file `whitelist.txt`.

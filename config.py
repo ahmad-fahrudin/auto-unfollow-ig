@@ -37,10 +37,11 @@ REMOTE_DEBUGGING_PORT = 9222
 # Username Instagram Anda (kosongkan "" jika ingin dideteksi otomatis saat login)
 INSTAGRAM_USERNAME = ""
 
-# Batas maksimal akun yang di-unfollow dalam satu kali sesi eksekusi.
-# PENTING: Instagram membatasi unfollow maksimal 15-25 akun per sesi/jam
-# untuk menghindari Action Block ("Try Again Later").
-MAX_UNFOLLOW_LIMIT = 300
+# Batas maksimal akun yang di-unfollow dalam satu kali batch.
+# PENTING: Instagram membatasi unfollow sekitar 15-25 akun per batch/sesi
+# untuk menghindari Action Block ("Try Again Later"). Setelah 1 batch selesai,
+# Anda dapat langsung memilih untuk melanjutkan ke batch berikutnya tanpa keluar browser & tanpa scan ulang.
+MAX_UNFOLLOW_LIMIT = 25
 
 # Waktu tunggu acak (detik) antar tindakan unfollow (Safety Human-like Delay)
 # Mencegah deteksi bot otomatis oleh Instagram (disarankan minimal 8-18 detik)
